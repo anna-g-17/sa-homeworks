@@ -1,0 +1,199 @@
+openapi: 3.0.0
+info:
+  title: Интернет-магазин API
+  version: 1.0.0
+  
+tags:
+  - name: Product Service
+    description: "Сервис информации о товарах"
+  - name: Cart Service
+    description: "Сервис управления корзинами"
+paths:
+
+  /product/all:
+    get:
+      tags: 
+        - Product Service
+      summary: Получение списка товаров (витрина)
+      description: Возвращает список товаров с кратким описанием.
+      responses:
+        '200':
+          description: Список товаров
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductShort'
+
+  /product/{productId}:
+    get:
+      tags: 
+        - Product Service
+      summary: Получение детальной информации о товаре
+      description: Возвращает детальное описание товара по ID.
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Уникальный идентификатор товара
+      responses:
+        '200':
+          description: Детальная информация о товаре
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductFull'
+        '404':
+          description: Товар не найден
+    post:
+      tags: 
+        - Product Service
+      summary: Добавить товар в корзину
+      description: Добавляет указанный товар с количеством в корзину.
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Уникальный идентификатор товара
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+                type: object
+                properties:
+                  quantity:
+                    type: integer
+                    example: 5
+      responses:
+        '200':
+          description: Товар добавлен или обновлено количество
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400':
+          description: Некорректный запрос (например, товар отсутствует на складе)
+
+  /cart:
+    get:
+      tags: 
+        - Cart Service
+      summary: Получить содержимое корзины
+      description: Возвращает список товаров в корзине с количеством и суммой.
+      responses:
+        '200':
+          description: Корзина
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+
+    post:
+      tags: 
+        - Cart Service
+      summary: Добавить товар в корзину
+      description: Добавляет указанный товар с количеством в корзину. Внутренний метод сервиса Cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddToCartRequest'
+      responses:
+        '200':
+          description: Товар добавлен или обновлено количество
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400':
+          description: Некорректный запрос (например, товар отсутствует на складе)
+
+components:
+  schemas:
+
+    ProductShort:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "12345"
+        name:
+          type: string
+          example: "Смартфон XYZ"
+        shortDescription:
+          type: string
+          example: "Экран 6.1\", 128 ГБ, камера 12Мп"
+        price:
+          type: number
+          format: float
+          example: 19999.99
+        imageUrl:
+          type: string
+          example: "https://example.com/images/product12345_main.jpg"
+
+    ProductFull:
+      allOf:
+        - $ref: '#/components/schemas/ProductShort'
+        - type: object
+          properties:
+            fullDescription:
+              type: string
+              example: "Этот смартфон оснащён процессором XYZ, 6 ГБ ОЗУ, работает на Android."
+            images:
+              type: array
+              items:
+                type: string
+                example: "https://example.com/images/product12345_1.jpg"
+            stock:
+              type: integer
+              example: 25
+            attributes:
+              type: object
+              example:
+                color: "черный"
+                battery: "3000 mAh"
+
+    CartItem:
+      type: object
+      properties:
+        product:
+          $ref: '#/components/schemas/ProductShort'
+        quantity:
+          type: integer
+          example: 2
+        totalPrice:
+          type: number
+          format: float
+          example: 39999.98
+
+    Cart:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        totalAmount:
+          type: number
+          format: float
+          example: 65499.95
+
+    AddToCartRequest:
+      type: object
+      properties:
+        productId:
+          type: string
+          example: "12345"
+        quantity:
+          type: integer
+          example: 1
+      required:
+        - productId
+        - quantity
